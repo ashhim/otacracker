@@ -1,0 +1,30 @@
+name: otacracker
+description: Production Flutter BLE smartwatch reverse-engineering and OTA workbench.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.7.2 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_blue_plus: ^2.3.3
+  flutter_riverpod: ^2.6.1
+  permission_handler: ^12.0.1
+  path_provider: ^2.1.5
+  file_picker: ^11.0.2
+  crypto: ^3.0.7
+  convert: ^3.1.2
+  collection: ^1.19.1
+  archive: ^4.0.9
+  intl: ^0.20.2
+  uuid: ^4.5.3
+  shared_preferences: ^2.5.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+flutter:
+  uses-material-design: true
