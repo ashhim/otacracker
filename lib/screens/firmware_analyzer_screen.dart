@@ -20,23 +20,53 @@ class FirmwareAnalyzerScreen extends ConsumerWidget {
     return AppShell(
       currentRoute: AppRoutes.firmwareAnalyzer,
       title: 'Firmware Analyzer',
-      subtitle: 'Binary header inspection, signature detection, entropy analysis, and OTA format heuristics',
+      subtitle: 'Header inspection, signature detection, entropy analysis, and OTA structure heuristics',
+      actions: [
+        ElevatedButton.icon(
+          onPressed: () => ref.read(firmwareAnalyzerControllerProvider).pickAndAnalyze(),
+          icon: const Icon(Icons.folder_open_rounded),
+          label: const Text('Choose File'),
+        ),
+        if (metadata != null)
+          OutlinedButton.icon(
+            onPressed: () => ref.read(exportServiceProvider).exportFirmwareMetadata(metadata),
+            icon: const Icon(Icons.download_rounded),
+            label: const Text('Export JSON'),
+          ),
+        if (metadata != null)
+          OutlinedButton.icon(
+            onPressed: () => ref.read(exportServiceProvider).exportFirmwareMetadataText(metadata),
+            icon: const Icon(Icons.description_rounded),
+            label: const Text('Export TXT'),
+          ),
+      ],
       child: ListView(
         children: [
           NeonCard(
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Expanded(
-                  child: SectionHeader(
-                    title: 'Binary Artifact',
-                    subtitle: 'Inspect BIN, IMG, RES, DAT, or ZIP-based smartwatch payloads',
+                const SectionHeader(
+                  title: 'Binary Artifact',
+                  subtitle: 'Inspect BIN, IMG, RES, DAT, or ZIP-based smartwatch payloads',
+                ),
+                const SizedBox(height: 12),
+                if (analyzer.loading)
+                  const LinearProgressIndicator(minHeight: 8),
+                if (analyzer.error != null) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    analyzer.error!,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.neonRed),
                   ),
-                ),
-                ElevatedButton.icon(
-                  onPressed: () => ref.read(firmwareAnalyzerControllerProvider).pickAndAnalyze(),
-                  icon: const Icon(Icons.folder_open_rounded),
-                  label: const Text('Choose File'),
-                ),
+                ],
+                if (metadata == null && !analyzer.loading && analyzer.error == null) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    'No firmware artifact loaded. Choose a file to inspect metadata, entropy, and probable OTA structure.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
+                  ),
+                ],
               ],
             ),
           ),
@@ -52,6 +82,7 @@ class FirmwareAnalyzerScreen extends ConsumerWidget {
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 5),
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
                             child: Text(
@@ -62,6 +93,7 @@ class FirmwareAnalyzerScreen extends ConsumerWidget {
                                   ?.copyWith(color: AppTheme.textSecondary),
                             ),
                           ),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               entry.value,
@@ -82,7 +114,7 @@ class FirmwareAnalyzerScreen extends ConsumerWidget {
                 children: [
                   const SectionHeader(
                     title: 'Signatures and Entropy',
-                    subtitle: 'Useful for distinguishing compressed, encrypted, or raw firmware payloads',
+                    subtitle: 'Distinguish compressed, encrypted, containerized, or raw firmware payloads',
                   ),
                   const SizedBox(height: 14),
                   Text(
@@ -106,7 +138,7 @@ class FirmwareAnalyzerScreen extends ConsumerWidget {
                                 margin: const EdgeInsets.symmetric(horizontal: 2),
                                 height: (12 + (value / 8 * 32)).toDouble(),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.neonBlue.withValues(alpha: 0.72),
+                                  color: AppTheme.neonGreen.withValues(alpha: 0.72),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
@@ -128,6 +160,11 @@ class FirmwareAnalyzerScreen extends ConsumerWidget {
                     subtitle: metadata.possibleOtaFormat,
                   ),
                   const SizedBox(height: 12),
+                  if (metadata.asciiStrings.isEmpty)
+                    Text(
+                      'No printable strings extracted from the current payload window.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
+                    ),
                   ...metadata.asciiStrings.map(
                     (value) => Padding(
                       padding: const EdgeInsets.only(bottom: 6),

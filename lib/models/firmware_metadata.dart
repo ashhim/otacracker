@@ -22,4 +22,19 @@ class FirmwareMetadata {
   final double entropy;
   final List<double> entropyWindows;
   final String possibleOtaFormat;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'fileName': fileName,
+      'sizeBytes': sizeBytes,
+      'sha256': sha256,
+      'crc32Hex': crc32Hex,
+      'signatures': signatures,
+      'asciiStrings': asciiStrings,
+      'headerFields': headerFields,
+      'entropy': entropy,
+      'entropyWindows': entropyWindows,
+      'possibleOtaFormat': possibleOtaFormat,
+    };
+  }
 }

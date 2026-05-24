@@ -7,6 +7,7 @@ import '../providers/app_providers.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/neon_card.dart';
 import '../widgets/section_header.dart';
+import '../widgets/status_chip.dart';
 
 class DeviceInformationScreen extends ConsumerWidget {
   const DeviceInformationScreen({super.key});
@@ -19,7 +20,16 @@ class DeviceInformationScreen extends ConsumerWidget {
     return AppShell(
       currentRoute: AppRoutes.deviceInfo,
       title: 'Device Information',
-      subtitle: 'Decoded standard characteristics, vendor channel heuristics, and OTA suitability scoring',
+      subtitle: 'Decoded characteristics, vendor channel heuristics, firmware hints, and advertisement fingerprints',
+      actions: device == null
+          ? const []
+          : [
+              OutlinedButton.icon(
+                onPressed: () => ref.read(bleControllerProvider).exportSelectedDeviceProfile(),
+                icon: const Icon(Icons.download_rounded),
+                label: const Text('Export Device'),
+              ),
+            ],
       child: device == null
           ? const Center(child: Text('No connected device selected'))
           : ListView(
@@ -31,9 +41,7 @@ class DeviceInformationScreen extends ConsumerWidget {
                       SectionHeader(title: device.displayName, subtitle: device.id),
                       const SizedBox(height: 16),
                       _MetadataTable(entries: {
-                        'Battery Level': ble.insights.batteryLevel == null
-                            ? 'Unknown'
-                            : '${ble.insights.batteryLevel}%',
+                        'Battery Level': ble.insights.batteryLevel == null ? 'Unknown' : '${ble.insights.batteryLevel}%',
                         'Manufacturer': ble.insights.manufacturerName ?? 'Unknown',
                         'Model Number': ble.insights.modelNumber ?? 'Unknown',
                         'Serial Number': ble.insights.serialNumber ?? 'Unknown',
@@ -42,6 +50,7 @@ class DeviceInformationScreen extends ConsumerWidget {
                         'Software Version': ble.insights.softwareVersion ?? 'Unknown',
                         'MTU': ble.insights.mtu.toString(),
                         'Connection Interval': ble.insights.connectionIntervalLabel,
+                        'PHY Support': ble.insights.phySupportLabel,
                       }),
                     ],
                   ),
@@ -52,8 +61,42 @@ class DeviceInformationScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SectionHeader(
+                        title: 'Transport Detection',
+                        subtitle: 'OTA, DFU, UART-like endpoints, and vendor family hints',
+                      ),
+                      const SizedBox(height: 14),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final hint in ble.insights.vendorHints)
+                            StatusChip(label: hint, color: AppTheme.neonBlue),
+                          for (final uuid in ble.insights.dfuServices)
+                            StatusChip(label: 'DFU ${uuid.substring(0, 8)}', color: AppTheme.neonAmber),
+                          for (final uuid in ble.insights.uartServices)
+                            StatusChip(label: 'UART ${uuid.substring(0, 8)}', color: AppTheme.neonGreen),
+                        ],
+                      ),
+                      if (ble.insights.vendorHints.isEmpty &&
+                          ble.insights.dfuServices.isEmpty &&
+                          ble.insights.uartServices.isEmpty) ...[
+                        const SizedBox(height: 10),
+                        Text(
+                          'No strong transport hints detected from the current GATT map.',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                NeonCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SectionHeader(
                         title: 'OTA and DFU Detection',
-                        subtitle: 'Writable + notify pair scoring across exposed GATT channels',
+                        subtitle: 'Writable and notify pair scoring across exposed GATT channels',
                       ),
                       const SizedBox(height: 14),
                       if (ble.insights.otaChannels.isEmpty)
@@ -77,7 +120,7 @@ class DeviceInformationScreen extends ConsumerWidget {
                                 Text(channel.label, style: Theme.of(context).textTheme.titleLarge),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '${channel.serviceUuid} / ${channel.characteristicUuid} • Score ${channel.score}',
+                                  '${channel.serviceUuid} / ${channel.characteristicUuid} | Score ${channel.score}',
                                   style: Theme.of(context)
                                       .textTheme
                                       .bodySmall
@@ -85,7 +128,7 @@ class DeviceInformationScreen extends ConsumerWidget {
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
-                                  channel.reasoning.join(' • '),
+                                  channel.reasoning.join(' | '),
                                   style: Theme.of(context)
                                       .textTheme
                                       .bodySmall
@@ -96,6 +139,33 @@ class DeviceInformationScreen extends ConsumerWidget {
                           ),
                         ),
                       ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                NeonCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SectionHeader(
+                        title: 'Advertisement and GATT Fingerprint',
+                        subtitle: 'Manufacturer data, service data, counts, and captured scan summary',
+                      ),
+                      const SizedBox(height: 14),
+                      _MetadataTable(entries: {
+                        'Service Count': '${ble.insights.serviceCount}',
+                        'Characteristic Count': '${ble.insights.characteristicCount}',
+                        'Descriptor Count': '${ble.insights.descriptorCount}',
+                        'Manufacturer Data': ble.insights.manufacturerData.isEmpty
+                            ? 'Unavailable'
+                            : ble.insights.manufacturerData.entries.map((entry) => '${entry.key}:${entry.value}').join(', '),
+                        'Service Data Keys': ble.insights.serviceDataKeys.isEmpty
+                            ? 'Unavailable'
+                            : ble.insights.serviceDataKeys.join(', '),
+                        'Advertisement Summary': ble.insights.advertisementSummary.isEmpty
+                            ? 'Unavailable'
+                            : ble.insights.advertisementSummary,
+                      }),
                     ],
                   ),
                 ),
@@ -118,6 +188,7 @@ class _MetadataTable extends StatelessWidget {
             (entry) => Padding(
               padding: const EdgeInsets.symmetric(vertical: 6),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: Text(
@@ -125,6 +196,7 @@ class _MetadataTable extends StatelessWidget {
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
                     ),
                   ),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       entry.value,

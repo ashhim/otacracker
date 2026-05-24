@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import '../ble/ble_uuid_catalog.dart';
+import '../core/app_constants.dart';
 import '../logs/log_service.dart';
 import '../models/app_settings.dart';
 import '../models/ble_characteristic_info.dart';
@@ -79,18 +80,46 @@ class BleRepository {
     }
   }
 
-  Future<void> startScan() async {
+  Future<void> startScan({
+    Duration timeout = const Duration(seconds: AppConstants.scanCycleSeconds),
+  }) async {
     await FlutterBluePlus.startScan(
-      timeout: const Duration(seconds: 15),
+      timeout: timeout,
       continuousUpdates: true,
       continuousDivisor: 1,
       removeIfGone: const Duration(seconds: 10),
       androidScanMode: AndroidScanMode.lowLatency,
+      androidUsesFineLocation: true,
       androidCheckLocationServices: true,
     );
   }
 
   Future<void> stopScan() => FlutterBluePlus.stopScan();
+
+  Future<List<BluetoothDevice>> loadSystemDevices() async {
+    final devices = <String, BluetoothDevice>{};
+    try {
+      final system = await FlutterBluePlus.systemDevices([Guid(AppConstants.standardGapService)]);
+      for (final device in system) {
+        devices[device.remoteId.str] = device;
+        _devices[device.remoteId.str] = device;
+      }
+    } catch (_) {
+      // ignored on unsupported platforms
+    }
+    if (Platform.isAndroid) {
+      try {
+        final bonded = await FlutterBluePlus.bondedDevices;
+        for (final device in bonded) {
+          devices[device.remoteId.str] = device;
+          _devices[device.remoteId.str] = device;
+        }
+      } catch (_) {
+        // ignored on unsupported platforms
+      }
+    }
+    return devices.values.toList(growable: false);
+  }
 
   Future<void> connectToDevice(String deviceId, AppSettings settings) async {
     final device = _devices[deviceId] ?? BluetoothDevice.fromId(deviceId);
@@ -119,6 +148,25 @@ class BleRepository {
       autoConnect: settings.autoReconnect,
       mtu: settings.autoReconnect ? null : settings.requestedMtu,
     );
+  }
+
+  Future<String> getPhySupportLabel() async {
+    if (!Platform.isAndroid) {
+      return 'Unavailable on this platform';
+    }
+    try {
+      final support = await FlutterBluePlus.getPhySupport();
+      final modes = <String>['1M'];
+      if (support.le2M) {
+        modes.add('2M');
+      }
+      if (support.leCoded) {
+        modes.add('Coded');
+      }
+      return modes.join(', ');
+    } catch (_) {
+      return 'Unknown';
+    }
   }
 
   Future<void> disconnectDevice(String deviceId) async {
@@ -192,6 +240,22 @@ class BleRepository {
     final mtu = await device.requestMtu(requestedMtu);
     _mtuCache[deviceId] = mtu;
     return mtu;
+  }
+
+  Future<void> preferFastPhy(String deviceId) async {
+    if (!Platform.isAndroid) {
+      return;
+    }
+    final device = _requireDevice(deviceId);
+    try {
+      await device.setPreferredPhy(
+        txPhy: Phy.le2m.mask | Phy.leCoded.mask,
+        rxPhy: Phy.le2m.mask | Phy.leCoded.mask,
+        option: PhyCoding.noPreferred,
+      );
+    } catch (error) {
+      _logService.debug('Preferred PHY request failed for $deviceId: $error');
+    }
   }
 
   Future<int> readRssi(String deviceId) async {

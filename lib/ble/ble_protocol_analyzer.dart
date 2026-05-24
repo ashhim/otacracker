@@ -13,10 +13,62 @@ class BleProtocolAnalyzer {
     if (BleUuidCatalog.isWatchLikeName(record.displayName)) {
       return true;
     }
+    if (record.appearance != null && record.appearance! > 0) {
+      return true;
+    }
+    if (record.manufacturerData.isNotEmpty && record.connectable) {
+      return true;
+    }
     return record.serviceUuids.any((uuid) {
       final value = uuid.toLowerCase();
       return BleUuidCatalog.otaServiceKeywords.any(value.contains);
     });
+  }
+
+  List<String> detectVendorHints(
+    BleDeviceRecord record, {
+    List<BleServiceInfo> services = const [],
+  }) {
+    final hints = <String>{};
+    final surface = [
+      record.displayName,
+      record.platformName,
+      record.manufacturerData.keys.join(' '),
+      record.manufacturerData.values.join(' '),
+      record.serviceUuids.join(' '),
+      record.serviceData.keys.join(' '),
+      services.map((service) => '${service.uuid} ${service.label}').join(' '),
+      services
+          .expand((service) => service.characteristics)
+          .map((characteristic) => '${characteristic.uuid} ${characteristic.label}')
+          .join(' '),
+    ].join(' ').toLowerCase();
+
+    if (surface.contains('goodix') || surface.contains('a6ed04')) {
+      hints.add('Goodix');
+    }
+    if (surface.contains('realtek') || surface.contains('d0ff')) {
+      hints.add('Realtek');
+    }
+    if (surface.contains('1530') || surface.contains('fe59') || surface.contains('nordic')) {
+      hints.add('Nordic DFU');
+    }
+    if (surface.contains('49535343') || surface.contains('telink')) {
+      hints.add('Telink');
+    }
+    if (surface.contains('hiwatch')) {
+      hints.add('HiWatchPro');
+    }
+    if (surface.contains('t800')) {
+      hints.add('T800 family');
+    }
+    if (surface.contains('fitpro') || surface.contains('bracelet')) {
+      hints.add('Generic fitness wearable');
+    }
+    if (hints.isEmpty && isWatchCandidate(record)) {
+      hints.add('Generic BLE smartwatch');
+    }
+    return hints.toList()..sort();
   }
 
   List<OtaChannel> detectOtaChannels(List<BleServiceInfo> services) {
@@ -72,6 +124,7 @@ class BleProtocolAnalyzer {
     final payload = {
       'device': device.toJson(),
       'services': services.map((value) => value.toJson()).toList(),
+      'vendorHints': detectVendorHints(device, services: services),
       'generatedAt': DateTime.now().toIso8601String(),
     };
     return const JsonEncoder.withIndent('  ').convert(payload);
@@ -91,7 +144,19 @@ class BleProtocolAnalyzer {
         score += 15;
       }
     }
+    if (characteristic.descriptorUuids.isNotEmpty) {
+      score += 3;
+    }
+    if (characteristic.label.toLowerCase().contains('control')) {
+      score += 6;
+    }
+    if (characteristic.label.toLowerCase().contains('packet')) {
+      score += 5;
+    }
     if (merged.contains('uart')) {
+      score += 8;
+    }
+    if (merged.contains('goodix') || merged.contains('realtek') || merged.contains('nordic') || merged.contains('dfu')) {
       score += 8;
     }
     if (merged.contains('ffd') || merged.contains('ffe')) {

@@ -9,12 +9,14 @@ class NeonCard extends StatelessWidget {
     this.padding = const EdgeInsets.all(18),
     this.onTap,
     this.color,
+    this.accent = AppTheme.borderStrong,
   });
 
   final Widget child;
   final EdgeInsetsGeometry padding;
   final VoidCallback? onTap;
   final Color? color;
+  final Color accent;
 
   @override
   Widget build(BuildContext context) {
@@ -22,15 +24,22 @@ class NeonCard extends StatelessWidget {
       duration: const Duration(milliseconds: 220),
       padding: padding,
       decoration: BoxDecoration(
-        color: color ?? AppTheme.panel,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppTheme.border),
-        boxShadow: const [
+        border: Border.all(color: accent.withValues(alpha: 0.44)),
+        gradient: LinearGradient(
+          colors: [
+            (color ?? AppTheme.panel).withValues(alpha: 0.98),
+            AppTheme.panelAlt.withValues(alpha: 0.94),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x223BE6FF),
-            blurRadius: 24,
+            color: accent.withValues(alpha: 0.12),
+            blurRadius: 28,
             spreadRadius: -12,
-            offset: Offset(0, 10),
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -40,10 +49,13 @@ class NeonCard extends StatelessWidget {
     if (onTap == null) {
       return content;
     }
-    return InkWell(
-      borderRadius: BorderRadius.circular(22),
-      onTap: onTap,
-      child: content,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(22),
+        onTap: onTap,
+        child: content,
+      ),
     );
   }
 }

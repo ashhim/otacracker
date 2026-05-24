@@ -25,8 +25,17 @@ class SignalIndicator extends StatelessWidget {
           height: 8 + (index * 6),
           margin: const EdgeInsets.symmetric(horizontal: 1.5),
           decoration: BoxDecoration(
-            color: active ? AppTheme.neonGreen : AppTheme.border,
+            color: active ? AppTheme.neonGreen : AppTheme.border.withValues(alpha: 0.55),
             borderRadius: BorderRadius.circular(4),
+            boxShadow: active
+                ? [
+                    BoxShadow(
+                      color: AppTheme.neonGreen.withValues(alpha: 0.22),
+                      blurRadius: 10,
+                      spreadRadius: -4,
+                    ),
+                  ]
+                : const [],
           ),
         );
       }),

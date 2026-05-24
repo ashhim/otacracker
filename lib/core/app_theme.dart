@@ -3,37 +3,39 @@ import 'package:flutter/material.dart';
 class AppTheme {
   const AppTheme._();
 
-  static const Color background = Color(0xFF060A12);
-  static const Color backgroundAlt = Color(0xFF0E1422);
-  static const Color panel = Color(0xFF111A2E);
-  static const Color panelAlt = Color(0xFF15233B);
-  static const Color neonBlue = Color(0xFF3BE6FF);
-  static const Color neonGreen = Color(0xFF67FF94);
-  static const Color neonAmber = Color(0xFFFFC857);
-  static const Color neonRed = Color(0xFFFF5370);
-  static const Color textPrimary = Color(0xFFEAF8FF);
-  static const Color textSecondary = Color(0xFF9CB1C9);
-  static const Color border = Color(0xFF20324D);
+  static const Color background = Color(0xFF020402);
+  static const Color backgroundAlt = Color(0xFF071008);
+  static const Color panel = Color(0xFF08140A);
+  static const Color panelAlt = Color(0xFF0D1D11);
+  static const Color panelRaised = Color(0xFF122816);
+  static const Color neonBlue = Color(0xFF2BFF7A);
+  static const Color neonGreen = Color(0xFF8DFFB0);
+  static const Color neonAmber = Color(0xFFB7FF52);
+  static const Color neonRed = Color(0xFFFF6E7F);
+  static const Color textPrimary = Color(0xFFE8FFF0);
+  static const Color textSecondary = Color(0xFF8EB89A);
+  static const Color border = Color(0xFF1E4926);
+  static const Color borderStrong = Color(0xFF46D86E);
 
   static ThemeData buildTheme() {
     const baseText = TextTheme(
       displaySmall: TextStyle(
-        fontFamily: 'sans-serif-condensed',
+        fontFamily: 'monospace',
         fontWeight: FontWeight.w700,
-        letterSpacing: 1.2,
+        letterSpacing: 1.8,
       ),
       headlineMedium: TextStyle(
-        fontFamily: 'sans-serif-condensed',
+        fontFamily: 'monospace',
         fontWeight: FontWeight.w700,
-        letterSpacing: 0.8,
+        letterSpacing: 1.1,
       ),
       titleLarge: TextStyle(
-        fontFamily: 'sans-serif-condensed',
+        fontFamily: 'monospace',
         fontWeight: FontWeight.w600,
-        letterSpacing: 0.5,
+        letterSpacing: 0.7,
       ),
       bodyMedium: TextStyle(
-        fontFamily: 'sans-serif',
+        fontFamily: 'monospace',
         fontWeight: FontWeight.w400,
         letterSpacing: 0.15,
       ),
@@ -50,10 +52,10 @@ class AppTheme {
     );
 
     final scheme = ColorScheme.fromSeed(
-      seedColor: neonBlue,
+      seedColor: neonGreen,
       brightness: Brightness.dark,
-      primary: neonBlue,
-      secondary: neonGreen,
+      primary: neonGreen,
+      secondary: neonBlue,
       tertiary: neonAmber,
       surface: panel,
       error: neonRed,
@@ -64,6 +66,7 @@ class AppTheme {
       brightness: Brightness.dark,
       colorScheme: scheme,
       scaffoldBackgroundColor: background,
+      canvasColor: background,
       splashFactory: InkSparkle.splashFactory,
       textTheme: baseText.apply(
         bodyColor: textPrimary,
@@ -79,17 +82,17 @@ class AppTheme {
         color: panel,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(22),
           side: const BorderSide(color: border),
         ),
       ),
       navigationRailTheme: const NavigationRailThemeData(
         backgroundColor: backgroundAlt,
-        indicatorColor: Color(0x223BE6FF),
-        selectedIconTheme: IconThemeData(color: neonBlue),
-        selectedLabelTextStyle: TextStyle(color: neonBlue),
+        indicatorColor: Color(0x2646D86E),
+        selectedIconTheme: IconThemeData(color: neonGreen),
+        selectedLabelTextStyle: TextStyle(color: neonGreen, fontFamily: 'monospace'),
         unselectedIconTheme: IconThemeData(color: textSecondary),
-        unselectedLabelTextStyle: TextStyle(color: textSecondary),
+        unselectedLabelTextStyle: TextStyle(color: textSecondary, fontFamily: 'monospace'),
       ),
       drawerTheme: const DrawerThemeData(
         backgroundColor: backgroundAlt,
@@ -103,6 +106,8 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: panelAlt,
+        hintStyle: const TextStyle(color: textSecondary),
+        labelStyle: const TextStyle(color: textSecondary),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: border),
@@ -113,16 +118,34 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: neonBlue),
+          borderSide: const BorderSide(color: borderStrong),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: neonBlue,
+          backgroundColor: neonGreen,
           foregroundColor: background,
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: neonGreen,
+          side: const BorderSide(color: borderStrong),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: neonGreen,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        ),
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: neonGreen,
+        linearTrackColor: panelAlt,
       ),
       dividerTheme: const DividerThemeData(color: border, thickness: 1),
     );

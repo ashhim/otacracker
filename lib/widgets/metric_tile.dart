@@ -21,9 +21,16 @@ class MetricTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.panelAlt,
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.panelRaised.withValues(alpha: 0.96),
+            AppTheme.panelAlt.withValues(alpha: 0.92),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppTheme.border),
+        border: Border.all(color: accent.withValues(alpha: 0.36)),
       ),
       child: Row(
         children: [
@@ -53,6 +60,7 @@ class MetricTile extends StatelessWidget {
                   value,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: AppTheme.textPrimary,
+                        fontWeight: FontWeight.w700,
                       ),
                 ),
               ],

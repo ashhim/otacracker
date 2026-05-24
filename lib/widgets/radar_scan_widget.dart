@@ -18,8 +18,7 @@ class RadarScanWidget extends StatefulWidget {
   State<RadarScanWidget> createState() => _RadarScanWidgetState();
 }
 
-class _RadarScanWidgetState extends State<RadarScanWidget>
-    with SingleTickerProviderStateMixin {
+class _RadarScanWidgetState extends State<RadarScanWidget> with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: const Duration(seconds: 4),
@@ -91,10 +90,10 @@ class _RadarPainter extends CustomPainter {
     final sweepPaint = Paint()
       ..shader = SweepGradient(
         colors: [
-          AppTheme.neonBlue.withValues(alpha: 0),
-          AppTheme.neonBlue.withValues(alpha: active ? 0.85 : 0.25),
-          AppTheme.neonGreen.withValues(alpha: active ? 0.25 : 0.08),
-          AppTheme.neonBlue.withValues(alpha: 0),
+          AppTheme.neonGreen.withValues(alpha: 0),
+          AppTheme.neonGreen.withValues(alpha: active ? 0.72 : 0.22),
+          AppTheme.neonBlue.withValues(alpha: active ? 0.18 : 0.06),
+          AppTheme.neonGreen.withValues(alpha: 0),
         ],
         stops: const [0, 0.14, 0.2, 1],
         transform: GradientRotation(progress * math.pi * 2),
@@ -116,6 +115,15 @@ class _RadarPainter extends CustomPainter {
       ringPaint,
     );
     canvas.drawCircle(center, radius, sweepPaint);
+    canvas.drawCircle(center, 6, Paint()..color = AppTheme.neonGreen);
+    canvas.drawCircle(
+      center,
+      14,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1
+        ..color = AppTheme.neonGreen.withValues(alpha: 0.32),
+    );
 
     final targetPaint = Paint()..color = AppTheme.neonAmber;
     for (var index = 0; index < targetCount.clamp(0, 6); index++) {

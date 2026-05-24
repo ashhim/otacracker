@@ -68,10 +68,17 @@ class OtaController extends ChangeNotifier {
   }) async {
     final currentPayload = _payload;
     final selectedDeviceId = bleController.selectedDeviceId;
-    final txCharacteristicId = _selectedChannelId;
+    final txCharacteristicId = _selectedChannelId ??
+        (bleController.insights.otaChannels.isEmpty ? null : bleController.insights.otaChannels.first.characteristicId);
+    final ackCharacteristicId = _selectedAckCharacteristicId ??
+        (settings.requireAck && bleController.notifiableCharacteristics.isNotEmpty
+            ? bleController.notifiableCharacteristics.first.id
+            : null);
     if (currentPayload == null || selectedDeviceId == null || txCharacteristicId == null) {
       return;
     }
+    _selectedChannelId = txCharacteristicId;
+    _selectedAckCharacteristicId = ackCharacteristicId;
     _error = null;
     notifyListeners();
 
@@ -83,7 +90,7 @@ class OtaController extends ChangeNotifier {
     final nextState = await _engine.transfer(
       deviceId: selectedDeviceId,
       txCharacteristicId: txCharacteristicId,
-      ackCharacteristicId: _selectedAckCharacteristicId,
+      ackCharacteristicId: ackCharacteristicId,
       bytes: currentPayload.bytes,
       fileName: currentPayload.name,
       mtu: requestedMtu,

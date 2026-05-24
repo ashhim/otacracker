@@ -39,7 +39,10 @@ class AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selectedIndex = _destinations.indexWhere((destination) => destination.route == currentRoute);
-    final wideLayout = MediaQuery.sizeOf(context).width >= 1120;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final wideLayout = screenWidth >= 1160;
+    final compactHeader = screenWidth < 720;
+    final contentPadding = screenWidth >= 1400 ? 28.0 : screenWidth >= 860 ? 22.0 : 16.0;
     final content = Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -48,52 +51,73 @@ class AppShell extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
       ),
-      child: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 12, 18, 8),
-              child: Row(
-                children: [
-                  if (!wideLayout)
-                    Builder(
-                      builder: (innerContext) => IconButton(
-                        onPressed: () => Scaffold.of(innerContext).openDrawer(),
-                        icon: const Icon(Icons.menu_rounded),
-                      ),
-                    ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                color: AppTheme.textPrimary,
-                              ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          subtitle,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppTheme.textSecondary,
-                              ),
-                        ),
-                      ],
-                    ),
+      child: CustomPaint(
+        painter: _ShellBackdropPainter(),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Container(
+                padding: EdgeInsets.fromLTRB(contentPadding, 14, contentPadding, 14),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.panel.withValues(alpha: 0.95),
+                      AppTheme.panelAlt.withValues(alpha: 0.88),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  ...actions,
-                ],
+                  border: Border(
+                    bottom: BorderSide(color: AppTheme.borderStrong.withValues(alpha: 0.26)),
+                  ),
+                ),
+                child: compactHeader
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              if (!wideLayout)
+                                Builder(
+                                  builder: (innerContext) => IconButton(
+                                    onPressed: () => Scaffold.of(innerContext).openDrawer(),
+                                    icon: const Icon(Icons.menu_rounded),
+                                  ),
+                                ),
+                              Expanded(child: _ShellTitle(title: title, subtitle: subtitle)),
+                            ],
+                          ),
+                          if (actions.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            Wrap(spacing: 8, runSpacing: 8, children: actions),
+                          ],
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          if (!wideLayout)
+                            Builder(
+                              builder: (innerContext) => IconButton(
+                                onPressed: () => Scaffold.of(innerContext).openDrawer(),
+                                icon: const Icon(Icons.menu_rounded),
+                              ),
+                            ),
+                          Expanded(child: _ShellTitle(title: title, subtitle: subtitle)),
+                          if (actions.isNotEmpty) ...[
+                            const SizedBox(width: 12),
+                            Wrap(spacing: 8, runSpacing: 8, alignment: WrapAlignment.end, children: actions),
+                          ],
+                        ],
+                      ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18),
-                child: child,
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(contentPadding, 18, contentPadding, 12),
+                  child: child,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -103,18 +127,57 @@ class AppShell extends StatelessWidget {
         backgroundColor: Colors.transparent,
         body: Row(
           children: [
-            NavigationRail(
-              selectedIndex: selectedIndex < 0 ? 0 : selectedIndex,
-              labelType: NavigationRailLabelType.all,
-              onDestinationSelected: (index) => _navigate(context, _destinations[index].route),
-              destinations: _destinations
-                  .map(
-                    (destination) => NavigationRailDestination(
-                      icon: Icon(destination.icon),
-                      label: Text(destination.label),
-                    ),
-                  )
-                  .toList(),
+            Container(
+              decoration: BoxDecoration(
+                color: AppTheme.backgroundAlt,
+                border: Border(
+                  right: BorderSide(color: AppTheme.borderStrong.withValues(alpha: 0.2)),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.neonGreen.withValues(alpha: 0.08),
+                    blurRadius: 24,
+                    spreadRadius: -16,
+                    offset: const Offset(8, 0),
+                  ),
+                ],
+              ),
+              child: NavigationRail(
+                selectedIndex: selectedIndex < 0 ? 0 : selectedIndex,
+                labelType: NavigationRailLabelType.all,
+                onDestinationSelected: (index) => _navigate(context, _destinations[index].route),
+                leading: Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 16, 10, 10),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 54,
+                        height: 54,
+                        decoration: BoxDecoration(
+                          color: AppTheme.panelRaised,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppTheme.borderStrong.withValues(alpha: 0.4)),
+                        ),
+                        child: const Icon(Icons.watch_rounded, color: AppTheme.neonGreen),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'OTA\nLAB',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(color: AppTheme.neonGreen),
+                      ),
+                    ],
+                  ),
+                ),
+                destinations: _destinations
+                    .map(
+                      (destination) => NavigationRailDestination(
+                        icon: Icon(destination.icon),
+                        label: Text(destination.label),
+                      ),
+                    )
+                    .toList(),
+              ),
             ),
             Expanded(child: content),
           ],
@@ -130,11 +193,17 @@ class AppShell extends StatelessWidget {
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [AppTheme.panelAlt, AppTheme.backgroundAlt],
+                  colors: [
+                    AppTheme.panelRaised.withValues(alpha: 0.96),
+                    AppTheme.backgroundAlt,
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
+                ),
+                border: Border(
+                  bottom: BorderSide(color: AppTheme.borderStrong.withValues(alpha: 0.18)),
                 ),
               ),
               child: Column(
@@ -185,4 +254,69 @@ class _ShellDestination {
   final String route;
   final String label;
   final IconData icon;
+}
+
+class _ShellTitle extends StatelessWidget {
+  const _ShellTitle({
+    required this.title,
+    required this.subtitle,
+  });
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                color: AppTheme.textPrimary,
+              ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppTheme.textSecondary,
+              ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ShellBackdropPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final gridPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1
+      ..color = AppTheme.border.withValues(alpha: 0.18);
+    const step = 36.0;
+    for (double x = 0; x <= size.width; x += step) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
+    }
+    for (double y = 0; y <= size.height; y += step) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+    final glowPaint = Paint()
+      ..shader = const RadialGradient(
+        colors: [
+          Color(0x332BFF7A),
+          Colors.transparent,
+        ],
+      ).createShader(
+        Rect.fromCircle(
+          center: Offset(size.width * 0.82, size.height * 0.12),
+          radius: size.shortestSide * 0.34,
+        ),
+      );
+    canvas.drawRect(Offset.zero & size, glowPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

@@ -12,6 +12,14 @@ class AppConstants {
   static const splashDelayMs = 1400;
   static const packetBufferLimit = 2500;
   static const appLogBufferLimit = 1200;
+  static const scanCycleSeconds = 18;
+  static const scanRestartDelayMs = 900;
+  static const scanStallTimeoutMs = 9000;
+  static const reconnectInitialDelayMs = 1500;
+  static const reconnectMaxDelayMs = 12000;
+  static const descriptorReadTimeoutMs = 1000;
+  static const packetUiFlushMs = 60;
+  static const maxRssiSamples = 24;
 
   static const standardBatteryService = '0000180f-0000-1000-8000-00805f9b34fb';
   static const standardBatteryLevelCharacteristic = '00002a19-0000-1000-8000-00805f9b34fb';

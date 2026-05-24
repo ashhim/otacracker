@@ -59,11 +59,12 @@ class PacketStreamView extends StatelessWidget {
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(color: color),
                     ),
                     const SizedBox(width: 10),
-                    Text(
-                      '${packet.direction.name.toUpperCase()} ${packet.kind.name.toUpperCase()}',
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(color: AppTheme.textSecondary),
+                    Expanded(
+                      child: Text(
+                        '${packet.direction.name.toUpperCase()} ${packet.kind.name.toUpperCase()}',
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(color: AppTheme.textSecondary),
+                      ),
                     ),
-                    const Spacer(),
                     Text(
                       FormatUtils.time(packet.timestamp),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
@@ -72,17 +73,32 @@ class PacketStreamView extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  packet.hex,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppTheme.textPrimary,
-                        fontFamily: 'monospace',
-                      ),
+                  '${packet.serviceUuid} / ${packet.characteristicUuid}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
+                ),
+                const SizedBox(height: 6),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Text(
+                    packet.hex,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.textPrimary,
+                          fontFamily: 'monospace',
+                        ),
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   packet.ascii,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
                 ),
+                if (packet.note != null && packet.note!.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    packet.note!,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: color),
+                  ),
+                ],
               ],
             ),
           ),

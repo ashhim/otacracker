@@ -15,8 +15,7 @@ class SplashScreen extends ConsumerStatefulWidget {
   ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends ConsumerState<SplashScreen>
-    with SingleTickerProviderStateMixin {
+class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: const Duration(seconds: 2),
@@ -88,11 +87,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: const RadialGradient(
-                          colors: [AppTheme.neonBlue, AppTheme.panelAlt],
+                          colors: [AppTheme.neonGreen, AppTheme.panelAlt],
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.neonBlue.withValues(alpha: 0.35),
+                            color: AppTheme.neonGreen.withValues(alpha: 0.35),
                             blurRadius: 40,
                             spreadRadius: 8,
                           ),

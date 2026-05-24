@@ -41,7 +41,7 @@ class _SavedSessionsScreenState extends ConsumerState<SavedSessionsScreen> {
                         tilePadding: EdgeInsets.zero,
                         title: Text(session.device.displayName, style: Theme.of(context).textTheme.titleLarge),
                         subtitle: Text(
-                          '${session.createdAt.toLocal()} • ${session.packets.length} packets',
+                          '${session.createdAt.toLocal()} | ${session.packets.length} packets',
                           style: Theme.of(context)
                               .textTheme
                               .bodySmall
@@ -50,7 +50,7 @@ class _SavedSessionsScreenState extends ConsumerState<SavedSessionsScreen> {
                         children: [
                           Align(
                             alignment: Alignment.centerLeft,
-                            child: Text(
+                            child: SelectableText(
                               session.topologyJson,
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: AppTheme.textSecondary,

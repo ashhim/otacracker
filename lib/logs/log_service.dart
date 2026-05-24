@@ -9,6 +9,7 @@ class LogService extends ChangeNotifier {
   final List<BlePacket> _packets = <BlePacket>[];
   BlePacket? _selectedPacket;
   int _packetSequence = 0;
+  bool _notifyQueued = false;
 
   List<AppLogEntry> get entries => List.unmodifiable(_entries.reversed);
   List<BlePacket> get packets => List.unmodifiable(_packets.reversed);
@@ -24,7 +25,7 @@ class LogService extends ChangeNotifier {
     if (_entries.length > AppConstants.appLogBufferLimit) {
       _entries.removeRange(0, _entries.length - AppConstants.appLogBufferLimit);
     }
-    notifyListeners();
+    _scheduleNotify();
   }
 
   BlePacket recordPacket({
@@ -51,7 +52,7 @@ class LogService extends ChangeNotifier {
     if (_packets.length > AppConstants.packetBufferLimit) {
       _packets.removeRange(0, _packets.length - AppConstants.packetBufferLimit);
     }
-    notifyListeners();
+    _scheduleNotify();
     return packet;
   }
 
@@ -73,5 +74,19 @@ class LogService extends ChangeNotifier {
 
   List<BlePacket> packetsForDevice(String deviceId) {
     return _packets.where((packet) => packet.deviceId == deviceId).toList(growable: false);
+  }
+
+  void _scheduleNotify() {
+    if (_notifyQueued) {
+      return;
+    }
+    _notifyQueued = true;
+    Future<void>.delayed(
+      const Duration(milliseconds: AppConstants.packetUiFlushMs),
+      () {
+        _notifyQueued = false;
+        notifyListeners();
+      },
+    );
   }
 }

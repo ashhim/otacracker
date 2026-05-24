@@ -36,7 +36,45 @@ class OtaTransferEngine {
   }) async {
     _cancelRequested = false;
     final startedAt = DateTime.now();
-    final chunkSize = _effectiveChunkSize(mtu, preferredChunkSize, withoutResponse);
+    if (bytes.isEmpty) {
+      final failedState = OtaTransferState(
+        status: OtaTransferStatus.failed,
+        fileName: fileName,
+        totalBytes: 0,
+        sentBytes: 0,
+        chunkSize: 0,
+        mtu: mtu,
+        retries: 0,
+        bytesPerSecond: 0,
+        startedAt: startedAt,
+        lastUpdatedAt: startedAt,
+        resumeOffset: resumeOffset,
+        error: 'Selected OTA payload is empty.',
+      );
+      onProgress(failedState);
+      return failedState;
+    }
+    if (requireAck && ackCharacteristicId == null) {
+      final failedState = OtaTransferState(
+        status: OtaTransferStatus.failed,
+        fileName: fileName,
+        totalBytes: bytes.lengthInBytes,
+        sentBytes: resumeOffset,
+        chunkSize: 0,
+        mtu: mtu,
+        retries: 0,
+        bytesPerSecond: 0,
+        startedAt: startedAt,
+        lastUpdatedAt: startedAt,
+        resumeOffset: resumeOffset,
+        error: 'ACK mode is enabled, but no ACK characteristic was selected.',
+      );
+      onProgress(failedState);
+      return failedState;
+    }
+    final maxChunkSize = _effectiveChunkSize(mtu, preferredChunkSize, withoutResponse);
+    final minChunkSize = withoutResponse ? 20 : 16;
+    var currentChunkSize = maxChunkSize;
     var sentBytes = resumeOffset;
     var retries = 0;
     var lastState = OtaTransferState(
@@ -44,7 +82,7 @@ class OtaTransferEngine {
       fileName: fileName,
       totalBytes: bytes.lengthInBytes,
       sentBytes: sentBytes,
-      chunkSize: chunkSize,
+      chunkSize: currentChunkSize,
       mtu: mtu,
       retries: 0,
       bytesPerSecond: 0,
@@ -62,6 +100,17 @@ class OtaTransferEngine {
 
     final txParts = _parseCharacteristicId(txCharacteristicId);
     final ackParts = ackCharacteristicId == null ? null : _parseCharacteristicId(ackCharacteristicId);
+    final headerPreview = bytes.sublist(0, bytes.lengthInBytes < 32 ? bytes.lengthInBytes : 32);
+    _logService.recordPacket(
+      direction: BlePacketDirection.outgoing,
+      kind: BlePacketKind.otaHeader,
+      deviceId: deviceId,
+      serviceUuid: txParts.$1,
+      characteristicUuid: txParts.$2,
+      bytes: headerPreview,
+      note: 'OTA header preview',
+    );
+    final effectiveDelayMs = delayMs < 0 ? 0 : delayMs;
 
     for (var offset = resumeOffset; offset < bytes.lengthInBytes;) {
       if (_cancelRequested) {
@@ -75,7 +124,8 @@ class OtaTransferEngine {
         return lastState;
       }
 
-      final nextOffset = (offset + chunkSize > bytes.lengthInBytes) ? bytes.lengthInBytes : offset + chunkSize;
+      final nextOffset =
+          (offset + currentChunkSize > bytes.lengthInBytes) ? bytes.lengthInBytes : offset + currentChunkSize;
       final chunk = bytes.sublist(offset, nextOffset);
       try {
         await _repository.writeCharacteristic(
@@ -90,7 +140,7 @@ class OtaTransferEngine {
           serviceUuid: txParts.$1,
           characteristicUuid: txParts.$2,
           bytes: chunk,
-          note: 'OTA chunk ${offset ~/ chunkSize + 1}',
+          note: 'OTA chunk ${offset ~/ currentChunkSize + 1}',
         );
         if (requireAck && ackCharacteristicId != null) {
           final ack = await _repository.waitForNotification(
@@ -109,26 +159,35 @@ class OtaTransferEngine {
         }
         sentBytes = nextOffset;
         offset = nextOffset;
+        if (retries == 0 && currentChunkSize < maxChunkSize) {
+          currentChunkSize = (currentChunkSize + 8).clamp(minChunkSize, maxChunkSize);
+        }
+        retries = 0;
         final elapsedSeconds = DateTime.now().difference(startedAt).inMilliseconds / 1000;
         lastState = lastState.copyWith(
           status: OtaTransferStatus.uploading,
           sentBytes: sentBytes,
           retries: retries,
+          chunkSize: currentChunkSize,
           bytesPerSecond: elapsedSeconds <= 0 ? 0 : sentBytes / elapsedSeconds,
           lastUpdatedAt: DateTime.now(),
           resumeOffset: sentBytes,
         );
         onProgress(lastState);
-        if (delayMs > 0) {
-          await Future<void>.delayed(Duration(milliseconds: delayMs));
+        if (effectiveDelayMs > 0) {
+          await Future<void>.delayed(Duration(milliseconds: effectiveDelayMs));
+        } else if (withoutResponse) {
+          await Future<void>.delayed(const Duration(milliseconds: 6));
         }
       } catch (error) {
         retries++;
+        currentChunkSize = (currentChunkSize ~/ 2).clamp(minChunkSize, maxChunkSize);
         if (retries > maxRetries) {
           lastState = lastState.copyWith(
             status: OtaTransferStatus.failed,
             sentBytes: sentBytes,
             retries: retries,
+            chunkSize: currentChunkSize,
             error: error.toString(),
             lastUpdatedAt: DateTime.now(),
             resumeOffset: sentBytes,
@@ -136,8 +195,20 @@ class OtaTransferEngine {
           onProgress(lastState);
           return lastState;
         }
-        _logService.warning('Retry $retries/$maxRetries for chunk at offset $offset');
-        await Future<void>.delayed(Duration(milliseconds: delayMs * 2));
+        _logService.warning(
+          'Retry $retries/$maxRetries for chunk at offset $offset with chunk size $currentChunkSize',
+        );
+        lastState = lastState.copyWith(
+          status: OtaTransferStatus.uploading,
+          retries: retries,
+          chunkSize: currentChunkSize,
+          lastUpdatedAt: DateTime.now(),
+          resumeOffset: sentBytes,
+        );
+        onProgress(lastState);
+        await Future<void>.delayed(
+          Duration(milliseconds: effectiveDelayMs > 0 ? effectiveDelayMs * 2 : 20),
+        );
       }
     }
 

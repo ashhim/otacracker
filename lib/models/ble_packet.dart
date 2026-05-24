@@ -4,7 +4,7 @@ import '../utils/hex_utils.dart';
 
 enum BlePacketDirection { incoming, outgoing, system }
 
-enum BlePacketKind { read, write, notify, indication, replay, metadata }
+enum BlePacketKind { read, write, notify, indication, replay, descriptor, advertisement, otaHeader, metadata }
 
 class BlePacket {
   BlePacket({

@@ -31,21 +31,23 @@ class _PacketLoggerScreenState extends ConsumerState<PacketLoggerScreen> {
           packet.ascii.toLowerCase().contains(query) ||
           packet.serviceUuid.contains(query) ||
           packet.characteristicUuid.contains(query) ||
-          packet.deviceId.toLowerCase().contains(query);
+          packet.deviceId.toLowerCase().contains(query) ||
+          (packet.note?.toLowerCase().contains(query) ?? false);
     }).toList(growable: false);
 
     return AppShell(
       currentRoute: AppRoutes.packetLogger,
       title: 'Packet Logger',
-      subtitle: 'Hex viewer, ASCII view, export pipeline, and packet replay staging',
+      subtitle: 'Hex view, ASCII view, advertisement capture, and replay staging',
       child: Column(
         children: [
           NeonCard(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SectionHeader(
                   title: 'Live Packet Stream',
-                  subtitle: 'Outgoing writes and incoming reads/notifications captured by the workbench',
+                  subtitle: 'Writes, reads, notifications, descriptor traffic, and advertisement captures',
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -54,12 +56,18 @@ class _PacketLoggerScreenState extends ConsumerState<PacketLoggerScreen> {
                       child: TextField(
                         onChanged: (value) => setState(() => _query = value),
                         decoration: const InputDecoration(
-                          hintText: 'Search hex, ascii, device id, or UUID',
+                          hintText: 'Search hex, ascii, device id, UUID, or note',
                           prefixIcon: Icon(Icons.search_rounded),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
                     OutlinedButton.icon(
                       onPressed: () async {
                         await exportService.exportPacketsJson(logs.packets);
@@ -67,13 +75,17 @@ class _PacketLoggerScreenState extends ConsumerState<PacketLoggerScreen> {
                       icon: const Icon(Icons.data_object_rounded),
                       label: const Text('JSON'),
                     ),
-                    const SizedBox(width: 8),
                     OutlinedButton.icon(
                       onPressed: () async {
                         await exportService.exportPacketsText(logs.packets);
                       },
                       icon: const Icon(Icons.description_rounded),
                       label: const Text('TXT'),
+                    ),
+                    TextButton.icon(
+                      onPressed: ref.read(logServiceProvider).clearPackets,
+                      icon: const Icon(Icons.delete_sweep_rounded),
+                      label: const Text('Clear Buffer'),
                     ),
                   ],
                 ),
